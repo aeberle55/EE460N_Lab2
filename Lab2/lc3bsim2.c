@@ -404,9 +404,62 @@ int main(int argc, char *argv[]) {
 
 /***************************************************************/
 
-
+int getMemValue();
 
 void process_instruction(){
+	int instruction;
+	int opcode;
+	instruction = getMemValue();
+	opcode=instruction && 0xF000;
+	opcode=opcode>>12;
+	switch(opcode)
+	{
+		case 0:		//Branch
+
+			break;
+		case 1:		//Add
+
+			break;
+		case 2:		//LDB
+			
+			break;
+		case 3:		//STB
+			
+			break;
+		case 4:		//JSR
+			
+			break;
+		case 5:		//And
+			
+			break;
+		case 6:		//LDW
+			
+			break;
+		case 7:		//STW
+			
+			break;
+		
+			//RTI (1000) is not implemented
+
+		case 9:		//XOR and NOT
+			
+			break;
+
+			//1010 and 1011 are unused
+
+		case 12:	//JMP
+			
+			break;
+		case 13:	//SHF
+			
+			break;
+		case 14:	//LEA
+			
+			break;
+		case 15:	//TRAP
+			
+			break;
+	}
   /*  function: process_instruction
    *  
    *    Process one instruction at a time  
@@ -414,6 +467,16 @@ void process_instruction(){
    *       -Decode 
    *       -Execute
    *       -Update NEXT_LATCHES
-   */     
+   */
+}
 
+//Returns the value at the current PC memory location
+int getMemValue()
+{
+	int pc;
+	int v1,v2;
+	pc = CURRENT_LATCHES.PC;
+	v1=MEMORY[pc>>1][0];				//v1 is Least Significant 8 bits
+	v2=MEMORY[pc>>1][1];
+	return Low16bits((v2<<8)+v1);
 }
