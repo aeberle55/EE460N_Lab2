@@ -507,7 +507,16 @@ void process_instruction(){
 			evaluateConditional(num1);
 			break;
 		case 6:		/*LDW*/
-			
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			num2 = instruction & 0x003F;
+			if(instruction & BIT5)
+				num2=signExtend(num2,6);
+			num2 = num2<<1;
+			num1+=num2;
+			CURRENT_LATCHES.REGS[DR] = MEMORY[num1>>1][1]<<8 + MEMORY[num1>>1][0];
+			if(num1 & BIT15) 
+				num1=signExtend(num1,16);
+			evaluateConditional(num1);
 			break;
 		case 7:		/*STW*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
@@ -519,8 +528,9 @@ void process_instruction(){
 			MEMORY[num1>>1][1] = CURRENT_LATCHES.REGS[DR] & 0xFF00;
 			MEMORY[num1>>1][0] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
 			break;
-		
-			/*RTI (1000) is not implemented*/
+		case 8: 	/*RTI (1000) is not implemented*/
+			defaultNextState();
+			break;
 
 		case 9:		/*XOR and NOT*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
