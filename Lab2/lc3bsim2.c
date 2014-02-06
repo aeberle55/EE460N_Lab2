@@ -411,24 +411,32 @@ int main(int argc, char *argv[]) {
 #define BIT15 0x8000
 
 int getWordValue(int MAR);
+int getByteValue(int MAR);
 void defaultNextState();
 void evaluateConditional(int c);
-int getByteValue(int MAR);
 int signExtend(int x,int numBits);
 
+/*  function: process_instruction
+   *  
+   *    Process one instruction at a time  
+   *       -Fetch one instruction
+   *       -Decode 
+   *       -Execute
+   *       -Update NEXT_LATCHES
+   */
 void process_instruction(){
 	int instruction, opcode, num1, num2, DR, SR1, SR2;
 	defaultNextState();				/*Sets Next State to be default, including incrementing PC*/
 	num1 = 0;
 	num2 = 0;
 	instruction = getWordValue(CURRENT_LATCHES.PC);
+	/*DR and SR valid for appropriate functions*/
 	DR = instruction & 0x0E00;
 	DR = DR>>9;
 	SR1 = instruction & 0x01C0;
 	SR1 = SR1>>6;					
 	SR2 = instruction & 0x0007;
-	/*DR and SR valid for appropriate functions*/
-	opcode=instruction && 0xF000;
+	opcode=instruction & 0xF000;
 	opcode=opcode>>12;
 	switch(opcode)
 	{
@@ -457,7 +465,7 @@ void process_instruction(){
 			break;
 		case 2:		/*LDB*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
-			num2 = instruction & 0x001F;
+			num2 = instruction & 0x003F;
 			if(instruction & BIT5)
 				num2=signExtend(num2,6);
 			num1+=num2;
@@ -469,7 +477,7 @@ void process_instruction(){
 			break;
 		case 3:		/*STB*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
-			num2 = instruction & 0x001F;
+			num2 = instruction & 0x003F;
 			if(instruction & BIT5)
 				num2=signExtend(num2,6);
 			num1+=num2;
@@ -503,7 +511,7 @@ void process_instruction(){
 			break;
 		case 7:		/*STW*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
-			num2 = instruction & 0x001F;
+			num2 = instruction & 0x003F;
 			if(instruction & BIT5)
 				num2=signExtend(num2,6);
 			num2 = num2<<1;
@@ -560,18 +568,11 @@ void process_instruction(){
 			break;
 		case 15:	/*TRAP*/
 			num1=instruction & 0x00FF;
-			NEXT_LATCHES.REGS[7]=CURRENT_LATCHES.PC+2;
-			NEXT_LATCHES.PC=num1<<1;
+			NEXT_LATCHES.REGS[7]=CURRENT_LATCHES.PC+2;	/*Store incremented PC in R7*/
+			num1 = num1<<1;
+			NEXT_LATCHES.PC= getWordValue(num1);	/*Load PC with correct value from TRAP vector table*/
 			break;
 	}
-  /*  function: process_instruction
-   *  
-   *    Process one instruction at a time  
-   *       -Fetch one instruction
-   *       -Decode 
-   *       -Execute
-   *       -Update NEXT_LATCHES
-   */
 }
 
 /*Returns the Word value at a given memory location*/
@@ -608,7 +609,7 @@ void evaluateConditional(int c)
 	NEXT_LATCHES.Z=(c==0);
 	NEXT_LATCHES.P=(c>0);
 }
-
+/*Negative sign extends a number x with a size of numBits*/
 int signExtend(int x,int numBits)
 {
 	int mask = 0xFFFF0000;
