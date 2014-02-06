@@ -450,7 +450,7 @@ void process_instruction(){
 			  || ( (instruction & BIT9) && (CURRENT_LATCHES.P) ) ) {
 				if(instruction & BIT8) 
 					num2 = signExtend(num2,9);
-				PC += (num2<<1);
+				NEXT_LATCHES.PC += (num2<<1);
 			}			  
 			break;
 		case 1:		/*Add*/
@@ -494,7 +494,16 @@ void process_instruction(){
 			MEMORY[num1>>1][num1&1] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
 			break;
 		case 4:		/*JSR*/
-			
+			NEXT_LATCHES.REGS[7] = NEXT_LATCHES.PC; /* PC incremented in defaultNextState() at process start */
+			if(instruction & BIT11) {
+				/* PCoffset */
+				num1 = instruction & 0x07FF;
+				if(num1 & BIT10) 
+					num1 = signExtend(num1,11);		
+				NEXT_LATCHES.PC += (num1<<1); 
+			} else {
+				NEXT_LATCHES.PC = CURRENT_LATCHES[SR1];
+			}
 			break;
 		case 5:		/*And*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
@@ -523,7 +532,7 @@ void process_instruction(){
 				num2=signExtend(num2,6);
 			num2 = num2<<1;
 			num1+=num2;
-			CURRENT_LATCHES.REGS[DR] = MEMORY[num1>>1][1]<<8 + MEMORY[num1>>1][0];
+			NEXT_LATCHES.REGS[DR] = MEMORY[num1>>1][1]<<8 + MEMORY[num1>>1][0];
 			if(num1 & BIT15) 
 				num1=signExtend(num1,16);
 			evaluateConditional(num1);
@@ -539,7 +548,6 @@ void process_instruction(){
 			MEMORY[num1>>1][0] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
 			break;
 		case 8: 	/*RTI (1000) is not implemented*/
-			defaultNextState();
 			break;
 
 		case 9:		/*XOR and NOT*/
@@ -566,7 +574,7 @@ void process_instruction(){
 			/*1010 and 1011 are unused*/
 
 		case 12:	/*JMP*/
-			
+			NEXT_LATCHES.PC = CURRENT_LATCHES.REGS[SR1];
 			break;
 		case 13:	/*SHF*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
