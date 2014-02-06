@@ -407,8 +407,11 @@ int main(int argc, char *argv[]) {
 #define BIT4 0x0010
 #define BIT5 0x0020
 #define BIT7 0x0080
+#define BIT9 0x0200
+#define BIT10 0x0400
 #define BIT11 0x0800
 #define BIT15 0x8000
+
 
 int getWordValue(int MAR);
 int getByteValue(int MAR);
@@ -441,7 +444,14 @@ void process_instruction(){
 	switch(opcode)
 	{
 		case 0:		/*Branch*/
-
+			num2 = instruction & 0x01FF; 
+			if( ( (instruction & BIT11) && (CURRENT_LATCHES.N) ) 
+			  || ( (instruction & BIT10) && (CURRENT_LATCHES.Z) )
+			  || ( (instruction & BIT9) && (CURRENT_LATCHES.P) ) ) {
+				if(instruction & BIT8) 
+					num2 = signExtend(num2,9);
+				PC += (num2<<1);
+			}			  
 			break;
 		case 1:		/*Add*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
