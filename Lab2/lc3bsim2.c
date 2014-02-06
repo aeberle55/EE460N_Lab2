@@ -404,60 +404,164 @@ int main(int argc, char *argv[]) {
 
 /***************************************************************/
 
-int getMemValue();
+#define BIT4 0x0010
+#define BIT5 0x0020
+#define BIT7 0x0080
+#define BIT11 0x0800
+#define BIT15 0x8000
+
+int getWordValue(int MAR);
+void defaultNextState();
+void evaluateConditional(int c);
+int getByteValue(int MAR);
+int signExtend(int x,int numBits);
 
 void process_instruction(){
-	int instruction;
-	int opcode;
-	instruction = getMemValue();
+	int instruction, opcode, num1, num2, DR, SR1, SR2;
+	defaultNextState();				/*Sets Next State to be default, including incrementing PC*/
+	num1 = 0;
+	num2 = 0;
+	instruction = getWordValue(CURRENT_LATCHES.PC);
+	DR = instruction & 0x0E00;
+	DR = DR>>9;
+	SR1 = instruction & 0x01C0;
+	SR1 = SR1>>6;					
+	SR2 = instruction & 0x0007;
+	/*DR and SR valid for appropriate functions*/
 	opcode=instruction && 0xF000;
 	opcode=opcode>>12;
 	switch(opcode)
 	{
-		case 0:		//Branch
+		case 0:		/*Branch*/
 
 			break;
-		case 1:		//Add
-
+		case 1:		/*Add*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			if(num1 & BIT15)
+				num1=signExtend(num1,16);
+			if(instruction & BIT5)	/*Immediate*/
+			{
+				num2 = instruction & 0x001F;
+				if(instruction & BIT4)			/*Bit 4 represents sign*/
+					num2=signExtend(num2,5);
+			}
+			else
+			{
+				num2 = CURRENT_LATCHES.REGS[SR2];
+				if(num2 & BIT15)
+					num2=signExtend(num2,16);
+			}
+			num1 = num1+num2;
+			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
+			evaluateConditional(num1);
 			break;
-		case 2:		//LDB
+		case 2:		/*LDB*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			num2 = instruction & 0x001F;
+			if(instruction & BIT5)
+				num2=signExtend(num2,6);
+			num1+=num2;
+			num1 = getByteValue(num1);
+			NEXT_LATCHES.REGS[DR]=num1;
+			if(num1 & BIT7)
+				num1=signExtend(num1,8);		/*Set condition code*/
+			evaluateConditional(num1);
+			break;
+		case 3:		/*STB*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			num2 = instruction & 0x001F;
+			if(instruction & BIT5)
+				num2=signExtend(num2,6);
+			num1+=num2;
+			MEMORY[num1>>1][num1&1] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
+			break;
+		case 4:		/*JSR*/
 			
 			break;
-		case 3:		//STB
+		case 5:		/*And*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			if(num1 & BIT15)
+				num1=signExtend(num1,16);
+			if(instruction & BIT5)	/*Immediate*/
+			{
+				num2 = instruction & 0x001F;
+				if(instruction & BIT4)			/*Bit 4 represents sign*/
+					num2=signExtend(num2,5);
+			}
+			else
+			{
+				num2 = CURRENT_LATCHES.REGS[SR2];
+				if(num2 & BIT15)
+					num2=signExtend(num2,16);
+			}
+			num1 = num1&num2;
+			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
+			evaluateConditional(num1);
+			break;
+		case 6:		/*LDW*/
 			
 			break;
-		case 4:		//JSR
-			
-			break;
-		case 5:		//And
-			
-			break;
-		case 6:		//LDW
-			
-			break;
-		case 7:		//STW
-			
+		case 7:		/*STW*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			num2 = instruction & 0x001F;
+			if(instruction & BIT5)
+				num2=signExtend(num2,6);
+			num2 = num2<<1;
+			num1+=num2;
+			MEMORY[num1>>1][1] = CURRENT_LATCHES.REGS[DR] & 0xFF00;
+			MEMORY[num1>>1][0] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
 			break;
 		
-			//RTI (1000) is not implemented
+			/*RTI (1000) is not implemented*/
 
-		case 9:		//XOR and NOT
-			
+		case 9:		/*XOR and NOT*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			if(num1 & BIT15)
+				num1=signExtend(num1,16);
+			if(instruction & BIT5)	/*Immediate*/
+			{
+				num2 = instruction & 0x001F;
+				if(instruction & BIT4)			/*Bit 4 represents sign*/
+					num2=signExtend(num2,5);
+			}
+			else
+			{
+				num2 = CURRENT_LATCHES.REGS[SR2];
+				if(num2 & BIT15)
+					num2=signExtend(num2,16);
+			}
+			num1 = num1^num2;
+			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
+			evaluateConditional(num1);
 			break;
 
-			//1010 and 1011 are unused
+			/*1010 and 1011 are unused*/
 
-		case 12:	//JMP
+		case 12:	/*JMP*/
 			
 			break;
-		case 13:	//SHF
+		case 13:	/*SHF*/
+			num1 = CURRENT_LATCHES.REGS[SR1];
+			num2 = instruction & 0x000F;
+			if(instruction & BIT5)
+				if(num1 & BIT5)
+					num1=signExtend(num1,16);	/*Only Sign Extended when bit 5 is set*/
+			if(instruction & BIT4)	/*Right Shift*/
+				num1=num1>>num2;
+			else					/*Left Shift*/
+				num1=num1<<num2;
+			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
+			if(num1 & BIT15)		/*Possible to become a negitive according to lc3, but not c*/
+				num2=signExtend(num1,16);
+			evaluateConditional(num1);
+			break;
+		case 14:	/*LEA*/
 			
 			break;
-		case 14:	//LEA
-			
-			break;
-		case 15:	//TRAP
-			
+		case 15:	/*TRAP*/
+			num1=instruction & 0x00FF;
+			NEXT_LATCHES.REGS[7]=CURRENT_LATCHES.PC+2;
+			NEXT_LATCHES.PC=num1<<1;
 			break;
 	}
   /*  function: process_instruction
@@ -470,13 +574,44 @@ void process_instruction(){
    */
 }
 
-//Returns the value at the current PC memory location
-int getMemValue()
+/*Returns the Word value at a given memory location*/
+int getWordValue(int MAR)
 {
-	int pc;
 	int v1,v2;
-	pc = CURRENT_LATCHES.PC;
-	v1=MEMORY[pc>>1][0];				//v1 is Least Significant 8 bits
-	v2=MEMORY[pc>>1][1];
+	v1=MEMORY[MAR>>1][0];				/*v1 is Least Significant 8 bits*/
+	v2=MEMORY[MAR>>1][1];
 	return Low16bits((v2<<8)+v1);
+}
+
+/*Returns the Byte value at a given memory location*/
+int getByteValue(int MAR)
+{
+	return Low16bits(MEMORY[MAR>>1][MAR&1]);
+}
+
+/*Sets the NEXT_LATCHES structure to be as it would be following a NOP*/
+void defaultNextState()
+{
+	int k;
+	NEXT_LATCHES.N=CURRENT_LATCHES.N;
+	NEXT_LATCHES.Z=CURRENT_LATCHES.Z;
+	NEXT_LATCHES.P=CURRENT_LATCHES.P;
+	NEXT_LATCHES.PC=CURRENT_LATCHES.PC + 2;
+	for(k=0; k<LC_3b_REGS;k++)
+		NEXT_LATCHES.REGS[k]=CURRENT_LATCHES.REGS[k];
+}
+
+/*Sets the condition codes based on the integer c*/
+void evaluateConditional(int c)
+{
+	NEXT_LATCHES.N=(c<0);
+	NEXT_LATCHES.Z=(c==0);
+	NEXT_LATCHES.P=(c>0);
+}
+
+int signExtend(int x,int numBits)
+{
+	int mask = 0xFFFF0000;
+	mask = mask >> (16-numBits);	/*Right Shift is Arithmetic in C*/
+	return x+mask;
 }
