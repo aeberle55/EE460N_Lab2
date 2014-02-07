@@ -543,8 +543,8 @@ void process_instruction(){
 				num2=signExtend(num2,6);
 			num2 = (num2<<1);
 			num1+=num2;
-			MEMORY[num1>>1][1] = CURRENT_LATCHES.REGS[DR] & 0xFF00;
-			MEMORY[num1>>1][0] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
+			MEMORY[num1>>1][1] = Low16bits((CURRENT_LATCHES.REGS[DR] & 0xFF00)>>8);
+			MEMORY[num1>>1][0] = Low16bits(CURRENT_LATCHES.REGS[DR] & 0x00FF);
 			break;
 		case 8: 	/*RTI (1000) is not implemented*/
 			break;
