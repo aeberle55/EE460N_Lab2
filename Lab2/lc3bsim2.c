@@ -3,10 +3,10 @@
     in this comment.
     REFER TO THE SUBMISSION INSTRUCTION FOR DETAILS
 
-    Name 1: Full name of the first partner 
-    Name 2: Full name of the second partner
-    UTEID 1: UT EID of the first partner
-    UTEID 2: UT EID of the second partner
+    Name 1: George Netscher 
+    Name 2: Austin Eberle
+    UTEID 1: GMN255
+    UTEID 2: AJE542 
 */
 
 /***************************************************************/
@@ -407,6 +407,7 @@ int main(int argc, char *argv[]) {
 #define BIT4 0x0010
 #define BIT5 0x0020
 #define BIT7 0x0080
+#define BIT8 0x0100
 #define BIT9 0x0200
 #define BIT10 0x0400
 #define BIT11 0x0800
@@ -450,7 +451,7 @@ void process_instruction(){
 			  || ( (instruction & BIT9) && (CURRENT_LATCHES.P) ) ) {
 				if(instruction & BIT8) 
 					num2 = signExtend(num2,9);
-				NEXT_LATCHES.PC += (num2<<1);
+				NEXT_LATCHES.PC += Low16bits(num2<<1);
 			}			  
 			break;
 		case 1:		/*Add*/
@@ -480,9 +481,9 @@ void process_instruction(){
 				num2=signExtend(num2,6);
 			num1+=num2;
 			num1 = getByteValue(num1);
-			NEXT_LATCHES.REGS[DR]=num1;
+			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
 			if(num1 & BIT7)
-				num1=signExtend(num1,8);		/*Set condition code*/
+				num1=signExtend(num1,8); /*Set condition code*/
 			evaluateConditional(num1);
 			break;
 		case 3:		/*STB*/
@@ -494,17 +495,19 @@ void process_instruction(){
 			MEMORY[num1>>1][num1&1] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
 			break;
 		case 4:		/*JSR*/
-			NEXT_LATCHES.REGS[7] = NEXT_LATCHES.PC; /* PC incremented in defaultNextState() at process start */
+			num1 = NEXT_LATCHES.PC; /* store incremented PC in temporary variable */
+			/* PC incremented in defaultNextState() at process start */
 			if(instruction & BIT11) {
 				/* PCoffset */
 				num1 = instruction & 0x07FF;
 				if(num1 & BIT10) 
 					num1 = signExtend(num1,11);		
-				NEXT_LATCHES.PC += (num1<<1); 
+				NEXT_LATCHES.PC = Low16bits(NEXT_LATCHES.PC + (num1<<1) ); 
 			} else {
-				NEXT_LATCHES.PC = CURRENT_LATCHES[SR1];
+				NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1]);
 			}
-			break;
+			NEXT_LATCHES.REGS[7] = Low16bits(num1);
+ 			break;
 		case 5:		/*And*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
 			if(num1 & BIT15)
@@ -532,7 +535,7 @@ void process_instruction(){
 				num2=signExtend(num2,6);
 			num2 = num2<<1;
 			num1+=num2;
-			NEXT_LATCHES.REGS[DR] = MEMORY[num1>>1][1]<<8 + MEMORY[num1>>1][0];
+			NEXT_LATCHES.REGS[DR] = Low16bits(MEMORY[num1>>1][1]<<8 + MEMORY[num1>>1][0]);
 			if(num1 & BIT15) 
 				num1=signExtend(num1,16);
 			evaluateConditional(num1);
@@ -574,7 +577,7 @@ void process_instruction(){
 			/*1010 and 1011 are unused*/
 
 		case 12:	/*JMP*/
-			NEXT_LATCHES.PC = CURRENT_LATCHES.REGS[SR1];
+			NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1]);
 			break;
 		case 13:	/*SHF*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
@@ -592,7 +595,11 @@ void process_instruction(){
 			evaluateConditional(num1);
 			break;
 		case 14:	/*LEA*/
-			
+			num1 = (instruction & 0x01FF);
+			if(num1 & BIT8) 
+				num1 = signExtend(num1,9);
+			NEXT_LATCHES.REGS[DR] = Low16bits(NEXT_LATCHES.PC + num1);
+			/* do not set condition codes as per lab manual */	
 			break;
 		case 15:	/*TRAP*/
 			num1=instruction & 0x00FF;
