@@ -447,7 +447,7 @@ void process_instruction(){
 			  || ( (instruction & BIT9) && (CURRENT_LATCHES.P) ) ) {
 				if(instruction & BIT8) 
 					num2 = signExtend(num2,9);
-				NEXT_LATCHES.PC += Low16bits(num2<<1);
+				NEXT_LATCHES.PC = NEXT_LATCHES.PC + (num2<<1);
 			}			  
 			break;
 		case 1:		/*Add*/
@@ -529,7 +529,7 @@ void process_instruction(){
 			num2 = instruction & 0x003F;
 			if(instruction & BIT5)
 				num2=signExtend(num2,6);
-			num2 = num2<<1;
+			num2 = (num2<<1);
 			num1+=num2;
 			NEXT_LATCHES.REGS[DR] = MEMORY[num1>>1][1] + MEMORY[num1>>1][0];
 			if(num1 & BIT15) 
@@ -541,7 +541,7 @@ void process_instruction(){
 			num2 = instruction & 0x003F;
 			if(instruction & BIT5)
 				num2=signExtend(num2,6);
-			num2 = num2<<1;
+			num2 = (num2<<1);
 			num1+=num2;
 			MEMORY[num1>>1][1] = CURRENT_LATCHES.REGS[DR] & 0xFF00;
 			MEMORY[num1>>1][0] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
@@ -582,9 +582,9 @@ void process_instruction(){
 				if(num1 & BIT5)
 					num1=signExtend(num1,16);	/*Only Sign Extended when bit 5 is set*/
 			if(instruction & BIT4)	/*Right Shift*/
-				num1=num1>>num2;
+				num1=(num1>>num2);
 			else					/*Left Shift*/
-				num1=num1<<num2;
+				num1=(num1<<num2);
 			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
 			if(num1 & BIT15)		/*Possible to become a negitive according to lc3, but not c*/
 				num2=signExtend(num1,16);
