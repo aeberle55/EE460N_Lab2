@@ -1,8 +1,4 @@
 /*
-    Remove all unnecessary lines (including this one) 
-    in this comment.
-    REFER TO THE SUBMISSION INSTRUCTION FOR DETAILS
-
     Name 1: George Netscher 
     Name 2: Austin Eberle
     UTEID 1: GMN255
@@ -535,7 +531,7 @@ void process_instruction(){
 				num2=signExtend(num2,6);
 			num2 = num2<<1;
 			num1+=num2;
-			NEXT_LATCHES.REGS[DR] = Low16bits(MEMORY[num1>>1][1]<<8 + MEMORY[num1>>1][0]);
+			NEXT_LATCHES.REGS[DR] = MEMORY[num1>>1][1] + MEMORY[num1>>1][0];
 			if(num1 & BIT15) 
 				num1=signExtend(num1,16);
 			evaluateConditional(num1);
@@ -598,7 +594,7 @@ void process_instruction(){
 			num1 = (instruction & 0x01FF);
 			if(num1 & BIT8) 
 				num1 = signExtend(num1,9);
-			NEXT_LATCHES.REGS[DR] = Low16bits(NEXT_LATCHES.PC + num1);
+			NEXT_LATCHES.REGS[DR] = Low16bits(NEXT_LATCHES.PC + (num1<<1));
 			/* do not set condition codes as per lab manual */	
 			break;
 		case 15:	/*TRAP*/
