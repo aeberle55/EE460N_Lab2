@@ -491,7 +491,7 @@ void process_instruction(){
 			MEMORY[num1>>1][num1&1] = CURRENT_LATCHES.REGS[DR] & 0x00FF;
 			break;
 		case 4:		/*JSR*/
-			num1 = NEXT_LATCHES.PC; /* store incremented PC in temporary variable */
+			num2 = NEXT_LATCHES.PC; /* store incremented PC in temporary variable */
 			/* PC incremented in defaultNextState() at process start */
 			if(instruction & BIT11) {
 				/* PCoffset */
@@ -502,7 +502,7 @@ void process_instruction(){
 			} else {
 				NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1]);
 			}
-			NEXT_LATCHES.REGS[7] = Low16bits(num1);
+			NEXT_LATCHES.REGS[7] = Low16bits(num2);
  			break;
 		case 5:		/*And*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
