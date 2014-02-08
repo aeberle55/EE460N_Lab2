@@ -581,8 +581,15 @@ void process_instruction(){
 			if(instruction & BIT5)
 				if(num1 & BIT5)
 					num1=signExtend(num1,16);	/*Only Sign Extended when bit 5 is set*/
-			if(instruction & BIT4)	/*Right Shift*/
-				num1=(num1>>num2);
+			if(instruction & BIT4) { /*Right Shift*/
+				if(instruction & BIT5){
+					/* logical shift */
+					num1=(int)((unsigned int)num1>>num2);
+				} else {
+					/* arithmetic shift */
+					num1=(num1>>num2);
+				}
+			}
 			else					/*Left Shift*/
 				num1=(num1<<num2);
 			NEXT_LATCHES.REGS[DR]=Low16bits(num1);
