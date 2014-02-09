@@ -371,6 +371,7 @@ int main(int argc, char *argv[]) {
   printf("LC-3b Simulator\n\n");
 
   initialize(argv[1], argc - 1);
+  /*initialize("test2.txt",1);*/	
 
   if ( (dumpsim_file = fopen( "dumpsim", "w" )) == NULL ) {
     printf("Error: Can't open dumpsim file\n");
@@ -447,7 +448,7 @@ void process_instruction(){
 			  || ( (instruction & BIT9) && (CURRENT_LATCHES.P) ) ) {
 				if(instruction & BIT8) 
 					num2 = signExtend(num2,9);
-				NEXT_LATCHES.PC = NEXT_LATCHES.PC + (num2<<1);
+				NEXT_LATCHES.PC = CURRENT_LATCHES.PC + (num2<<1) + 2;	/*Fixed*/
 			}			  
 			break;
 		case 1:		/*Add*/
@@ -498,9 +499,9 @@ void process_instruction(){
 				num1 = instruction & 0x07FF;
 				if(num1 & BIT10) 
 					num1 = signExtend(num1,11);		
-				NEXT_LATCHES.PC = Low16bits(NEXT_LATCHES.PC + (num1<<1) ); 
+				NEXT_LATCHES.PC = Low16bits(NEXT_LATCHES.PC + (num1<<1) + 2); 
 			} else {
-				NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1]);
+				NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1] + 2);
 			}
 			NEXT_LATCHES.REGS[7] = Low16bits(num2);
  			break;
@@ -531,7 +532,7 @@ void process_instruction(){
 				num2=signExtend(num2,6);
 			num2 = (num2<<1);
 			num1+=num2;
-			NEXT_LATCHES.REGS[DR] = MEMORY[num1>>1][1] + MEMORY[num1>>1][0];
+			NEXT_LATCHES.REGS[DR] = (MEMORY[num1>>1][1]<<8) + MEMORY[num1>>1][0];
 			if(num1 & BIT15) 
 				num1=signExtend(num1,16);
 			evaluateConditional(num1);
@@ -573,7 +574,7 @@ void process_instruction(){
 			/*1010 and 1011 are unused*/
 
 		case 12:	/*JMP*/
-			NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1]);
+			NEXT_LATCHES.PC = Low16bits(CURRENT_LATCHES.REGS[SR1] + 2);
 			break;
 		case 13:	/*SHF*/
 			num1 = CURRENT_LATCHES.REGS[SR1];
